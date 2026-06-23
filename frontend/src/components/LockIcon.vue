@@ -1,0 +1,36 @@
+<template>
+  <svg
+    class="lock-icon-svg"
+    :width="width"
+    :height="size"
+    viewBox="0 0 11 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M1.80469 15.5625C0.617188 15.5625 0 14.9297 0 13.6484V8.10938C0 6.98438 0.492188 6.35156 1.42969 6.22656V4.375C1.42969 1.49219 3.33594 0 5.46875 0C7.60156 0 9.50781 1.49219 9.50781 4.375V6.23438C10.4453 6.35938 10.9297 6.98438 10.9297 8.10938V13.6484C10.9297 14.9297 10.3125 15.5625 9.125 15.5625H1.80469ZM2.89062 4.23438V6.20312H8.04688V4.23438C8.04688 2.39844 6.85938 1.39844 5.46875 1.39844C4.07031 1.39844 2.89062 2.39844 2.89062 4.23438Z"
+      fill="currentColor"
+    />
+  </svg>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+
+const props = withDefaults(
+  defineProps<{
+    size?: number
+  }>(),
+  { size: 16 },
+)
+
+const width = computed(() => Math.round((props.size * 11) / 16))
+</script>
+
+<style scoped>
+.lock-icon-svg {
+  display: block;
+  flex-shrink: 0;
+}
+</style>

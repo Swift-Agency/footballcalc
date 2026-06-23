@@ -1,0 +1,33 @@
+# Local environment
+# Intentionally tracked for this handoff per project owner request.
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Runtime data
+docker-data/*
+!docker-data/.gitkeep
+!docker-data/football.db
+!docker-data/legal/
+!docker-data/legal/**
+*.db
+!docker-data/football.db
+!backend/football.db
+*.sqlite
+*.sqlite3
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo

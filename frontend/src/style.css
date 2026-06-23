@@ -1,0 +1,178 @@
+:root {
+  --primary: var(--tg-button, #3346D8);
+  --primary-light: var(--tg-accent, #2C3EC4);
+  --primary-dark: #3730A3;
+  --bg: var(--tg-secondary-bg, #F3F4F6);
+  --card: var(--tg-section-bg, #FFFFFF);
+  --text: var(--tg-text, #1F2937);
+  --text-secondary: var(--tg-hint, #6B7280);
+  --border: #E5E7EB;
+  --success: #10B981;
+  --danger: var(--tg-destructive, #EF4444);
+  --warning: #F59E0B;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --bottom-nav-height: 96px;
+  --bottom-nav-back-height: 64px;
+  --bottom-nav-current-height: var(--bottom-nav-height);
+  --page-header-height: 144px;
+  --list-page-header-height: 112px;
+  --app-safe-top: env(safe-area-inset-top, 0px);
+  --header-title-offset: 16px;
+  --cover-top-padding: 36px;
+}
+
+.tg-dark {
+  --border: #374151;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#app-root.nav-back-mode {
+  --bottom-nav-current-height: var(--bottom-nav-back-height);
+}
+
+.page {
+  flex: 1;
+  padding-bottom: calc(var(--bottom-nav-current-height) + 12px + env(safe-area-inset-bottom));
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  margin: 0 12px 12px;
+  overflow: hidden;
+}
+
+/* ── Page header on league-detail / standings / stats pages ────────────────── */
+.gradient-header {
+  background: linear-gradient(160deg, var(--primary) 0%, var(--primary-light) 100%);
+  box-sizing: border-box;
+  height: calc(var(--page-header-height) + var(--app-safe-top) + var(--header-title-offset));
+  padding-top: calc(var(--app-safe-top) + var(--header-title-offset));
+  padding-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: center;
+  color: white;
+  border-radius: 0 0 24px 24px;
+  /* margin-bottom: 16px; */
+}
+
+/* ── Compact header for leagues-list page ──────────────────────────────────── */
+.leagues-page-header {
+  background: linear-gradient(160deg, var(--primary) 0%, var(--primary-light) 100%);
+  box-sizing: border-box;
+  height: calc(var(--list-page-header-height) + var(--app-safe-top) + var(--header-title-offset));
+  padding-top: calc(var(--app-safe-top) + var(--header-title-offset));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  color: white;
+  border-radius: 0 0 24px 24px;
+  margin-bottom: 4px;
+}
+
+.leagues-page-header-inner {
+  flex: 0 0 var(--list-page-header-height);
+  height: var(--list-page-header-height);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+}
+
+.leagues-page-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+
+.leagues-page-header p {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+/* ── Venue filter ─────────────────────────────────────────────────────────── */
+.venue-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 16px 12px 25px;
+  /* margin-bottom: 16px; */
+}
+
+
+.venue-filter button {
+  display: flex;
+  padding: 10px 16px 12px 16px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 1024px;
+  background: #FFF;
+  border: none;
+  color: #222;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 22px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.venue-filter button.active {
+  border-radius: 1024px;
+  background: #2C3EC4;
+  box-shadow: 0 4px 16px 0 rgba(44, 62, 196, 0.24);
+  color: #FFF;
+}
+
+/* ── Loading / misc ────────────────────────────────────────────────────────── */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+/* ── Page transitions ──────────────────────────────────────────────────────── */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.list-move {
+  transition: transform 0.4s ease;
+}

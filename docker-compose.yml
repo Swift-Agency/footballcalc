@@ -1,0 +1,80 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    ports:
+      - "8200:8000"
+    env_file:
+      - backend/.env
+    environment:
+      PORT: "8000"
+      DATABASE_URL: sqlite:////data/football.db
+    volumes:
+      - ./docker-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.build_opener(urllib.request.ProxyHandler({})).open('http://127.0.0.1:8000/api/health', timeout=5)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      API_PROXY_TARGET: http://api:8000
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Single container: built Vue + API on one port (for ngrok / Telegram Mini App).
+  # Run: docker compose --profile production up app
+  app:
+    profiles: [production]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    ports:
+      - "8200:8000"
+    env_file:
+      - backend/.env
+    environment:
+      PORT: "8000"
+      DATABASE_URL: sqlite:////data/football.db
+      # Set WEB_APP_URL in backend/.env to your public HTTPS URL, e.g. ngrok:
+      # WEB_APP_URL=https://xxxx.ngrok-free.app
+    volumes:
+      - ./docker-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.build_opener(urllib.request.ProxyHandler({})).open('http://127.0.0.1:8000/api/health', timeout=5)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  frontend_node_modules:
