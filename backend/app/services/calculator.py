@@ -187,9 +187,13 @@ def _market_inputs(
     home_team_id: int,
     away_team_id: int,
     market: str,
+    league_key: str | None = None,
 ) -> Dict:
-    home = _team_market_aggregate(db, league_id, season, home_team_id, "home", market)
-    away = _team_market_aggregate(db, league_id, season, away_team_id, "away", market)
+    venue_home = "all" if league_key == "world_cup" else "home"
+    venue_away = "all" if league_key == "world_cup" else "away"
+
+    home = _team_market_aggregate(db, league_id, season, home_team_id, venue_home, market)
+    away = _team_market_aggregate(db, league_id, season, away_team_id, venue_away, market)
 
     if home and away:
         return {
@@ -202,10 +206,10 @@ def _market_inputs(
         }
 
     home_for, home_against, home_n = _fallback_market_from_matches(
-        db, league_id, season, home_team_id, "home", market
+        db, league_id, season, home_team_id, venue_home, market
     )
     away_for, away_against, away_n = _fallback_market_from_matches(
-        db, league_id, season, away_team_id, "away", market
+        db, league_id, season, away_team_id, venue_away, market
     )
     return {
         "home_for": home_for,
@@ -237,8 +241,10 @@ def calculate_match_odds(db: Session, league_id: int, home_team_id: int, away_te
     if home.league_id != league_id or away.league_id != league_id:
         raise HTTPException(status_code=422, detail="Teams must belong to selected league")
 
-    goals_input = _market_inputs(db, league_id, league.season, home_team_id, away_team_id, "goals")
-    if min(goals_input["home_n"], goals_input["away_n"]) < MIN_SAMPLE:
+    min_sample = 1 if league.key == "world_cup" else MIN_SAMPLE
+
+    goals_input = _market_inputs(db, league_id, league.season, home_team_id, away_team_id, "goals", league.key)
+    if min(goals_input["home_n"], goals_input["away_n"]) < min_sample:
         raise HTTPException(status_code=422, detail=_insufficient_data_detail(league))
 
     lambda_home = (goals_input["home_for"] + goals_input["away_against"]) / 2.0
@@ -263,18 +269,18 @@ def calculate_match_odds(db: Session, league_id: int, home_team_id: int, away_te
         {"event": "П2", "subevent": "Гости", "probability": _to_percent(p_away), "odds": _to_odds(p_away)},
     ]
 
-    cards_input = _market_inputs(db, league_id, league.season, home_team_id, away_team_id, "yellow_cards")
-    corners_input = _market_inputs(db, league_id, league.season, home_team_id, away_team_id, "corners")
+    cards_input = _market_inputs(db, league_id, league.season, home_team_id, away_team_id, "yellow_cards", league.key)
+    corners_input = _market_inputs(db, league_id, league.season, home_team_id, away_team_id, "corners", league.key)
 
     cards_rows: List[Dict]
-    if min(cards_input["home_n"], cards_input["away_n"]) >= MIN_SAMPLE:
+    if min(cards_input["home_n"], cards_input["away_n"]) >= min_sample:
         lambda_cards = cards_input["home_for"] + cards_input["away_for"]
         cards_rows = _calc_ou_rows_from_total_lambda(lambda_cards, CARDS_THRESHOLDS)
     else:
         cards_rows = []
 
     corners_rows: List[Dict]
-    if min(corners_input["home_n"], corners_input["away_n"]) >= MIN_SAMPLE:
+    if min(corners_input["home_n"], corners_input["away_n"]) >= min_sample:
         lambda_corners = corners_input["home_for"] + corners_input["away_for"]
         corners_rows = _calc_ou_rows_from_total_lambda(lambda_corners, CORNERS_THRESHOLDS)
     else:

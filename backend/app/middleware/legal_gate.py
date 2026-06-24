@@ -26,7 +26,7 @@ class LegalAccessMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if not path.startswith("/api/"):
             return await call_next(request)
-        if path in EXEMPT_PATHS:
+        if path in EXEMPT_PATHS or path.startswith("/api/team-logos/"):
             return await call_next(request)
 
         bot_token = os.getenv("MAIN_BOT_TOKEN", "").strip()
