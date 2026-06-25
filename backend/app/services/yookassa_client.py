@@ -11,10 +11,35 @@ from __future__ import annotations
 import logging
 import os
 import uuid
+from contextlib import contextmanager
 from decimal import Decimal
-from typing import Optional
+from typing import Iterator, Optional
 
 logger = logging.getLogger("yookassa_client")
+
+_PROXY_ENV_KEYS = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+)
+
+
+@contextmanager
+def _direct_http_env() -> Iterator[None]:
+    """
+    YooKassa SDK uses requests, which reads HTTP(S)_PROXY from the process env.
+    Telegram needs SOCKS proxy on this host, but YooKassa must go direct.
+    """
+    saved = {key: os.environ.pop(key, None) for key in _PROXY_ENV_KEYS}
+    try:
+        yield
+    finally:
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
 
 
 def _get_configuration():
@@ -46,22 +71,23 @@ def create_initial_payment(
     from yookassa import Payment
 
     key = idempotency_key or str(uuid.uuid4())
-    payment = Payment.create(
-        {
-            "amount": {
-                "value": str(amount),
-                "currency": "RUB",
+    with _direct_http_env():
+        payment = Payment.create(
+            {
+                "amount": {
+                    "value": str(amount),
+                    "currency": "RUB",
+                },
+                "confirmation": {
+                    "type": "redirect",
+                    "return_url": return_url,
+                },
+                "capture": True,
+                "save_payment_method": save_payment_method,
+                "description": description,
             },
-            "confirmation": {
-                "type": "redirect",
-                "return_url": return_url,
-            },
-            "capture": True,
-            "save_payment_method": save_payment_method,
-            "description": description,
-        },
-        idempotency_key=key,
-    )
+            idempotency_key=key,
+        )
     return payment.json()
 
 
@@ -79,18 +105,19 @@ def charge_recurring(
     from yookassa import Payment
 
     key = idempotency_key or str(uuid.uuid4())
-    payment = Payment.create(
-        {
-            "amount": {
-                "value": str(amount),
-                "currency": "RUB",
+    with _direct_http_env():
+        payment = Payment.create(
+            {
+                "amount": {
+                    "value": str(amount),
+                    "currency": "RUB",
+                },
+                "capture": True,
+                "payment_method_id": payment_method_id,
+                "description": description,
             },
-            "capture": True,
-            "payment_method_id": payment_method_id,
-            "description": description,
-        },
-        idempotency_key=key,
-    )
+            idempotency_key=key,
+        )
     return payment.json()
 
 
