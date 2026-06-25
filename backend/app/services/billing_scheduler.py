@@ -20,7 +20,7 @@ logger = logging.getLogger("billing_scheduler")
 
 async def _run_once():
     from app.database import SessionLocal
-    from app.models import Subscription, Payment, AppSettings
+    from app.models import Subscription, Payment, AppSettings, User
 
     db = SessionLocal()
     try:
@@ -65,12 +65,14 @@ async def _run_once():
             try:
                 from app.services import yookassa_client as yk
 
+                user = db.query(User).filter(User.id == sub.user_id).first()
                 idempotency_key = f"recurring-{sub.id}-{now.strftime('%Y%m%d%H')}"
                 payment_data = yk.charge_recurring(
                     amount=price,
                     payment_method_id=sub.yookassa_payment_method_id,
                     description="Подписка Football Calculator (автопродление)",
                     idempotency_key=idempotency_key,
+                    telegram_id=user.telegram_id if user else None,
                 )
 
                 import json

@@ -55,12 +55,56 @@ def _get_configuration():
         raise RuntimeError("yookassa package not installed. Run: pip install yookassa") from exc
 
 
+def _format_amount(amount: Decimal) -> str:
+    """YooKassa expects amounts with two decimal places, e.g. 480.00."""
+    return f"{amount.quantize(Decimal('0.01')):.2f}"
+
+
+def _receipt_customer(telegram_id: Optional[int] = None) -> dict:
+    """Customer contact for 54-FZ receipt (email or phone required by YooKassa)."""
+    explicit = os.getenv("YOOKASSA_RECEIPT_EMAIL", "").strip()
+    if explicit:
+        return {"email": explicit}
+    if telegram_id is not None:
+        web_app = os.getenv("WEB_APP_URL", "https://example.com").strip()
+        host = web_app.replace("https://", "").replace("http://", "").split("/")[0]
+        return {"email": f"tg{telegram_id}@{host}"}
+    raise ValueError(
+        "Receipt customer email is required: set YOOKASSA_RECEIPT_EMAIL or pass telegram_id"
+    )
+
+
+def build_receipt(
+    amount: Decimal,
+    description: str,
+    telegram_id: Optional[int] = None,
+) -> dict:
+    """Receipt payload for shops with YooKassa fiscalization enabled."""
+    value = _format_amount(amount)
+    vat_code = os.getenv("YOOKASSA_RECEIPT_VAT_CODE", "1").strip()
+    item_description = description.strip()[:128] or "Подписка"
+    return {
+        "customer": _receipt_customer(telegram_id),
+        "items": [
+            {
+                "description": item_description,
+                "quantity": "1.00",
+                "amount": {"value": value, "currency": "RUB"},
+                "vat_code": vat_code,
+                "payment_mode": "full_payment",
+                "payment_subject": "service",
+            }
+        ],
+    }
+
+
 def create_initial_payment(
     amount: Decimal,
     description: str,
     return_url: str,
     idempotency_key: Optional[str] = None,
     save_payment_method: bool = True,
+    telegram_id: Optional[int] = None,
 ) -> dict:
     """
     Create a payment, optionally saving the payment method for recurring charges.
@@ -71,11 +115,12 @@ def create_initial_payment(
     from yookassa import Payment
 
     key = idempotency_key or str(uuid.uuid4())
+    amount_value = _format_amount(amount)
     with _direct_http_env():
         payment = Payment.create(
             {
                 "amount": {
-                    "value": str(amount),
+                    "value": amount_value,
                     "currency": "RUB",
                 },
                 "confirmation": {
@@ -85,6 +130,7 @@ def create_initial_payment(
                 "capture": True,
                 "save_payment_method": save_payment_method,
                 "description": description,
+                "receipt": build_receipt(amount, description, telegram_id),
             },
             idempotency_key=key,
         )
@@ -96,6 +142,7 @@ def charge_recurring(
     payment_method_id: str,
     description: str,
     idempotency_key: Optional[str] = None,
+    telegram_id: Optional[int] = None,
 ) -> dict:
     """
     Charge a saved card without user interaction.
@@ -105,16 +152,18 @@ def charge_recurring(
     from yookassa import Payment
 
     key = idempotency_key or str(uuid.uuid4())
+    amount_value = _format_amount(amount)
     with _direct_http_env():
         payment = Payment.create(
             {
                 "amount": {
-                    "value": str(amount),
+                    "value": amount_value,
                     "currency": "RUB",
                 },
                 "capture": True,
                 "payment_method_id": payment_method_id,
                 "description": description,
+                "receipt": build_receipt(amount, description, telegram_id),
             },
             idempotency_key=key,
         )

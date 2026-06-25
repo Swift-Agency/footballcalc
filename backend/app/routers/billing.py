@@ -243,6 +243,7 @@ def billing_checkout(
             return_url=return_url,
             idempotency_key=idempotency_key,
             save_payment_method=(plan_type == "monthly"),
+            telegram_id=user.telegram_id,
         )
     except Exception as exc:
         logger.error("YooKassa create_initial_payment failed: %s", exc)
