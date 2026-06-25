@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.models import League, Match, Team
-from app.services.logo_proxy import team_logo_proxy_url
+from app.services.logo_proxy import resolve_team_logo_url
 
 logger = logging.getLogger("search")
 
@@ -49,7 +49,7 @@ def global_search(
             "name": t.name,
             "name_en": t.name_en,
             "league_id": t.league_id,
-            "logo_url": team_logo_proxy_url(t.id, t.logo_url),
+            "logo_url": resolve_team_logo_url(t.id, t.logo_url, t.name_en),
         }
         for t in team_rows
     ]

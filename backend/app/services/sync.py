@@ -22,6 +22,7 @@ from app.models import (
     TeamMarketAggregate,
     SyncRun,
 )
+from app.services.national_flags import national_flag_url
 from app.services.sstats import (
     SSTATS_BASE,
     fetch_leagues_sync,
@@ -409,6 +410,13 @@ def seed_league(
     return league
 
 
+def _resolve_team_logo(league: League, name_en: str, api_team: Optional[dict]) -> Optional[str]:
+    logo = _logo_url(api_team) if api_team else None
+    if not logo and _is_world_cup(league):
+        logo = national_flag_url(name_en)
+    return logo
+
+
 def _upsert_team(
     db: Session,
     league: League,
@@ -427,19 +435,19 @@ def _upsert_team(
 
     if existing:
         if api_team:
-            logo = _logo_url(api_team)
+            name_en = api_team.get("name") or existing.name_en
+            logo = _resolve_team_logo(league, name_en, api_team)
             if logo:
                 existing.logo_url = logo
-            name_en = api_team.get("name")
-            if name_en:
-                existing.name_en = name_en
-                existing.name = RUSSIAN_NAMES.get(name_en, name_en)
+            if api_team.get("name"):
+                existing.name_en = api_team.get("name")
+                existing.name = RUSSIAN_NAMES.get(existing.name_en, existing.name_en)
         return existing
 
     if api_team:
         name_en = api_team.get("name", f"Team {sstats_tid}")
         name_ru = RUSSIAN_NAMES.get(name_en, name_en)
-        logo = _logo_url(api_team)
+        logo = _resolve_team_logo(league, name_en, api_team)
     else:
         name_en = f"Team {sstats_tid}"
         name_ru = name_en

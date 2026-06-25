@@ -3,6 +3,8 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
+from app.services.national_flags import national_flag_url
+
 import httpx
 
 from app.services.sstats import SSTATS_BASE
@@ -30,6 +32,15 @@ def team_logo_proxy_url(team_id: int, raw_logo_url: Optional[str]) -> Optional[s
     if raw_logo_url.startswith("/api/team-logos/"):
         return raw_logo_url
     return f"/api/team-logos/{team_id}"
+
+
+def resolve_team_logo_url(
+    team_id: int,
+    logo_url: Optional[str],
+    name_en: Optional[str] = None,
+) -> Optional[str]:
+    """Use SStats logo when present, otherwise national-team flag fallback."""
+    return team_logo_proxy_url(team_id, logo_url or national_flag_url(name_en))
 
 
 def normalize_logo_source_url(raw_logo_url: Optional[str]) -> Optional[str]:

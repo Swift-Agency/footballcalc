@@ -1,7 +1,7 @@
 from pydantic import BaseModel, model_validator
 from typing import Optional, List
 
-from app.services.logo_proxy import team_logo_proxy_url
+from app.services.logo_proxy import resolve_team_logo_url
 
 
 class LeagueOut(BaseModel):
@@ -33,7 +33,7 @@ class TeamShort(BaseModel):
 
     @model_validator(mode="after")
     def _rewrite_logo_url_to_proxy(self):
-        self.logo_url = team_logo_proxy_url(self.id, self.logo_url)
+        self.logo_url = resolve_team_logo_url(self.id, self.logo_url, self.name_en)
         return self
 
 
