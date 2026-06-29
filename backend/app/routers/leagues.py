@@ -26,6 +26,7 @@ from app.schemas import (
 )
 from app.services.stats import compute_advanced_stats, compute_smallmarket_stats, compute_xg_stats
 from app.services.calculator import calculate_match_odds
+from app.services.moscow_time import naive_utc_to_moscow
 from app.services.sync import sync_upcoming_matches
 from app.services import access as access_svc
 from app.config.leagues import league_display_index
@@ -154,7 +155,8 @@ def get_xg(
 
 
 def _to_match_out(m: Match) -> MatchOut:
-    dt = m.date or datetime.utcnow()
+    dt_utc = m.date or datetime.utcnow()
+    dt = naive_utc_to_moscow(dt_utc)
     date_str = dt.date().isoformat()
     time_str = dt.strftime("%H:%M")
     return MatchOut(
