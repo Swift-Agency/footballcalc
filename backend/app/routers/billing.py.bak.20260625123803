@@ -242,7 +242,7 @@ def billing_checkout(
             description=description,
             return_url=return_url,
             idempotency_key=idempotency_key,
-            save_payment_method=(plan_type == "monthly" and os.getenv("YOOKASSA_RECURRING_ENABLED", "false").lower() in {"1", "true", "yes"}),
+            save_payment_method=(plan_type == "monthly"),
             telegram_id=user.telegram_id,
         )
     except Exception as exc:
@@ -336,8 +336,8 @@ async def yookassa_webhook(request: Request, db: Session = Depends(get_db)):
                 sub.plan_type = plan_type
                 sub.source = "paid"
                 sub.current_period_end = new_period_end
-                sub.cancel_at_period_end = (plan_type == "world_cup") or not bool(pm_id)
-                sub.next_charge_at = new_period_end if (plan_type == "monthly" and pm_id) else None
+                sub.cancel_at_period_end = (plan_type == "world_cup")
+                sub.next_charge_at = new_period_end if plan_type == "monthly" else None
                 if pm_id:
                     sub.yookassa_payment_method_id = pm_id
                 sub.last_payment_id = payment.id
@@ -349,8 +349,8 @@ async def yookassa_webhook(request: Request, db: Session = Depends(get_db)):
                     source="paid",
                     starts_at=datetime.utcnow(),
                     current_period_end=new_period_end,
-                    cancel_at_period_end=(plan_type == "world_cup") or not bool(pm_id),
-                    next_charge_at=new_period_end if (plan_type == "monthly" and pm_id) else None,
+                    cancel_at_period_end=(plan_type == "world_cup"),
+                    next_charge_at=new_period_end if plan_type == "monthly" else None,
                     yookassa_payment_method_id=pm_id,
                     last_payment_id=payment.id,
                 )
