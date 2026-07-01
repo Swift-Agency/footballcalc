@@ -67,39 +67,53 @@ async def poll_bot_updates(token: str, is_admin: bool = False) -> None:
         handler = run_main_handler
 
     url = f"{TELEGRAM_API}/bot{token}/getUpdates"
+    request_timeout = httpx.Timeout(connect=10.0, read=float(timeout + 10), write=10.0, pool=10.0)
+    bot_label = "admin" if is_admin else "main"
 
-    # Single client for the loop
-    async with httpx.AsyncClient(proxy=proxy, timeout=timeout + 15.0) as client:
-        while True:
-            try:
-                payload = {
-                    "offset": offset,
-                    "timeout": timeout,
-                    "allowed_updates": ["message", "callback_query"],
-                }
-                r = await client.post(url, json=payload)
-                if r.status_code != 200:
-                    logger.warning("Telegram polling (%s): HTTP %s. Retrying in 5s...", "admin" if is_admin else "main", r.status_code)
-                    await asyncio.sleep(5)
-                    continue
+    while True:
+        try:
+            async with httpx.AsyncClient(proxy=proxy, timeout=request_timeout) as client:
+                while True:
+                    payload = {
+                        "offset": offset,
+                        "timeout": timeout,
+                        "allowed_updates": ["message", "callback_query"],
+                    }
+                    r = await client.post(url, json=payload)
+                    if r.status_code != 200:
+                        logger.warning(
+                            "Telegram polling (%s): HTTP %s. Retrying in 5s...",
+                            bot_label,
+                            r.status_code,
+                        )
+                        await asyncio.sleep(5)
+                        continue
 
-                data = r.json()
-                if not data.get("ok"):
-                    logger.warning("Telegram polling (%s) error: %s. Retrying in 5s...", "admin" if is_admin else "main", data.get("description"))
-                    await asyncio.sleep(5)
-                    continue
+                    data = r.json()
+                    if not data.get("ok"):
+                        logger.warning(
+                            "Telegram polling (%s) error: %s. Retrying in 5s...",
+                            bot_label,
+                            data.get("description"),
+                        )
+                        await asyncio.sleep(5)
+                        continue
 
-                updates = data.get("result", [])
-                for update in updates:
-                    offset = update["update_id"] + 1
-                    asyncio.create_task(handler(update))
+                    updates = data.get("result", [])
+                    for update in updates:
+                        offset = update["update_id"] + 1
+                        asyncio.create_task(handler(update))
 
-            except asyncio.CancelledError:
-                logger.info("Telegram polling (%s) loop stopped.", "admin" if is_admin else "main")
-                break
-            except Exception as e:
-                logger.warning("Telegram polling (%s) exception: %s. Retrying in 5s...", "admin" if is_admin else "main", e)
-                await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            logger.info("Telegram polling (%s) loop stopped.", bot_label)
+            break
+        except Exception as e:
+            logger.warning(
+                "Telegram polling (%s) exception: %r. Retrying in 5s...",
+                bot_label,
+                e,
+            )
+            await asyncio.sleep(5)
 
 
 def start_telegram_polling() -> None:
